@@ -167,7 +167,19 @@ else {
     $tmp = Join-Path ([IO.Path]::GetTempPath()) 'seven-modelfiles'
     if (-not $DryRun) { New-Item -ItemType Directory -Force $tmp | Out-Null }
     $have = ''
-    if (-not $DryRun) { $have = (& ollama list 2>$null) -join "`n" }
+    if (-not $DryRun) {
+        $answers = $false
+        try { Invoke-WebRequest -UseBasicParsing -TimeoutSec 3 "$OllamaUrl/api/tags" | Out-Null; $answers = $true } catch { }
+        if (-not $answers) {
+            Say "Ollama's server is not running: starting it"
+            Start-Process -FilePath 'ollama' -ArgumentList 'serve' -WindowStyle Hidden
+            for ($i = 0; $i -lt 15 -and -not $answers; $i++) {
+                try { Invoke-WebRequest -UseBasicParsing -TimeoutSec 3 "$OllamaUrl/api/tags" | Out-Null; $answers = $true } catch { Start-Sleep -Seconds 2 }
+            }
+            if (-not $answers) { Fail "Ollama does not answer at ${OllamaUrl}: start the Ollama app and run this again" }
+        }
+        $have = (& ollama list 2>$null) -join "`n"
+    }
     function Model-Present([string]$name) { return ($have -match "(?m)^$([regex]::Escape($name))(:latest)?\s") }
 
     $cpu = @(
@@ -278,7 +290,19 @@ if cfg.get("retain_extraction_mode") != "concise" or cfg.get("enable_observation
     Say "wrote start_hindsight.ps1, hindsight.env.ps1 and setup_bank.py in $HindsightDir"
 
     # the database and the vector extension, then the API
-    Native "start Postgres" { & (Join-Path $pgbin 'pg_ctl.exe') start -w -D $data -o "-p $PostgresPort -c listen_addresses=127.0.0.1" -l (Join-Path $logs 'postgres.log') } -Quiet -Soft | Out-Null
+    # Not through Native: Postgres inherits the output pipe and holds it open, so a piped pg_ctl never returns.
+    if ($DryRun) { Say "[dry run] start Postgres" }
+    else {
+        $pgctl = Join-Path $pgbin 'pg_ctl.exe'
+        $running = Start-Process -FilePath $pgctl -ArgumentList "status -D `"$data`"" -WindowStyle Hidden -PassThru
+        $running.WaitForExit()          # not -Wait: that also waits for the postmaster child and never returns
+        if ($running.ExitCode -ne 0) {
+            $started = Start-Process -FilePath $pgctl -WindowStyle Hidden -PassThru -ArgumentList "start -w -D `"$data`" -o `"-p $PostgresPort -c listen_addresses=127.0.0.1`" -l `"$(Join-Path $logs 'postgres.log')`""
+            $started.WaitForExit()
+            if ($started.ExitCode -ne 0) { Fail "Postgres did not start: read $(Join-Path $logs 'postgres.log')" }
+        }
+        Say "Postgres is running on port $PostgresPort"
+    }
     $c = Native "make the database" { & (Join-Path $pgbin 'createdb.exe') -h 127.0.0.1 -p $PostgresPort -U hindsight hindsight } -Quiet -Soft
     if ($c -eq 0) { Say "database 'hindsight' made" }
     Native "pgvector on" { & (Join-Path $pgbin 'psql.exe') -h 127.0.0.1 -p $PostgresPort -U hindsight -d hindsight -c "CREATE EXTENSION IF NOT EXISTS vector" } -Quiet | Out-Null
