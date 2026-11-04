@@ -56,7 +56,7 @@ class ApprovalWatcher(QObject):
             running.join(2.0)
 
     def pending_count(self) -> int:
-        """Live approvals as of the last good poll (the orb's `pending`)."""
+        """Live approvals as of the last good poll."""
         return len(self._pending)
 
     def poll_now(self) -> None:

@@ -97,7 +97,7 @@ class DesktopWindow(QMainWindow):
         # A chat per section (Ray, 2026-09-18): `panel` is General's, full
         # size on its own page; `side_panels` holds each section's own chat,
         # shown beside that section. `approvals` is the one Ade OS-wide
-        # watcher (the orb counts from it); each chat sees only its own.
+        # watcher; each chat sees only its own.
         self.panel = panel
         self.side_panels = dict(side_panels or {})
         self.approvals = approvals if approvals is not None else getattr(panel, "watcher", None)
@@ -108,7 +108,7 @@ class DesktopWindow(QMainWindow):
         self._quitting = False
         self._last_health: str | None = None
         self._start_maximized = False
-        self.orb_controller = None      # piece 3: set by build_window
+        self.voice = None               # VoiceControls; set by build_window
 
         self.setWindowTitle("Seven-L1")
         if ICON_PATH.exists():
@@ -136,7 +136,7 @@ class DesktopWindow(QMainWindow):
         row.addSpacing(10)
         row.addWidget(self.brain_label)
         row.addStretch(1)
-        # Mute: shown once an orb (and so a microphone) is attached.
+        # Mute: shown once voice (and so a microphone) is attached.
         self.mic_button = QToolButton()
         self.mic_button.setObjectName("micButton")
         self.mic_button.setVisible(False)
@@ -211,9 +211,9 @@ class DesktopWindow(QMainWindow):
     # -- the microphone -----------------------------------------------------
 
     def attach_mic(self, controller) -> None:
-        """The header's Mute button drives the orb's microphone and shows
-        what it is REALLY doing -- the orb's own menu item stays in step,
-        because both go through the controller."""
+        """The header's Mute button drives the microphone and shows what it
+        is REALLY doing -- the tray's Microphone item stays in step, because
+        both go through VoiceControls."""
         self.mic_button.clicked.connect(controller.toggle_mic)
         controller.mic_state.connect(self.show_mic)
         self.mic_button.setVisible(True)
@@ -404,11 +404,11 @@ class DesktopWindow(QMainWindow):
                     section.stop()
                 except Exception:  # noqa: BLE001 -- quitting must finish
                     log.exception("stopping section %s failed", section.name)
-        if self.orb_controller is not None:
+        if self.voice is not None:
             try:
-                self.orb_controller.stop()
+                self.voice.stop()
             except Exception:  # noqa: BLE001 -- quitting must finish
-                log.exception("stopping the orb failed")
+                log.exception("stopping voice failed")
         for chat in self.all_panels():
             for step in (chat.on_quit, chat.client.stop, chat.watcher.stop):
                 try:
@@ -443,7 +443,7 @@ class DesktopWindow(QMainWindow):
     def save_state(self) -> None:
         g = self.normalGeometry() if self.isMaximized() else self.geometry()
         self._remember_panel_width()
-        # Merged, not replaced: window.json also holds the orb's own keys.
+        # Merged, not replaced: window.json also holds voice's own keys.
         state = load_state(self._state_path)
         state.update({
             "x": g.x(), "y": g.y(), "w": g.width(), "h": g.height(),

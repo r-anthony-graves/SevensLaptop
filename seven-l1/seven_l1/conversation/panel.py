@@ -100,7 +100,7 @@ class HistoryLineEdit(QLineEdit):
 
 class ConversationPanel(QWidget):
     approval_needed = Signal(str)   # the tool: the window raises itself
-    # For the orb (piece 3): what Seven is doing, as the panel sees it.
+    # What Seven is doing, as the panel sees it.
     busy_changed = Signal(bool)      # a turn started / ended
     reply_landed = Signal(str)       # an ask / chat / task answer shown in Chat
     turn_failed = Signal()           # a turn ended in "Call failed"

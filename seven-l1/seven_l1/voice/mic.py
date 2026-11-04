@@ -1,4 +1,4 @@
-"""The orb's microphone: one PortAudio input stream (sounddevice), cut into
+"""Seven's microphone: one PortAudio input stream (sounddevice), cut into
 utterances by the avatar's Segmenter.
 
 Mute STOPS the stream -- the device is released and the OS microphone

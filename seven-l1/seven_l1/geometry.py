@@ -51,7 +51,7 @@ def clamp_to_screens(rect: Rect, screens: list[Rect]) -> Rect:
 
 def fit_inside(rect: Rect, screens: list[Rect]) -> Rect:
     """Move `rect` (not resize it) so it lies wholly on the screen holding
-    most of it. The orb grows about its centre; from a corner that pushed
+    most of it. A window grows about its centre; from a corner that pushed
     the Large size ~76 px off-screen (review, 2026-09-18)."""
     if not screens:
         return rect

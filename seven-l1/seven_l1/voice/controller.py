@@ -68,10 +68,10 @@ FALLBACK_NOTE = ("Speech is on the Windows fallback: the whisper sidecar (127.0.
 class VoiceController(QObject):
     """panel needs: busy, voice_ask(text) -> bool, queue_voice_ask(text) ->
     bool, stage(text, note) -> bool, focus_input(), note(text). SIGNALS, not callbacks, for the
-    orb: a callback into the OrbController would make it and this a
+    controls: a callback into VoiceControls would make it and this a
     reference cycle, and a connection does not pin its receiver."""
 
-    wake_heard = Signal()        # the orb's wake: mood event + glyph arcs
+    wake_heard = Signal()        # kept for tests; the orb consumed it
     open_requested = Signal()    # show Seven with the panel open
     hush_requested = Signal()    # "Seven, stop": silence the reply being spoken
 

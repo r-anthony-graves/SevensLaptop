@@ -1,5 +1,5 @@
 """Utterance segmentation: the avatar's live-mic constants (ptt.js), so the
-orb hears the same way. Silence is measured and discarded, never sent.
+avatar hears the same way. Silence is measured and discarded, never sent.
 
     SPEECH_RMS  below this is room tone, not speech
     HANG_MS     silence that ends an utterance

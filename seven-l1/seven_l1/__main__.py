@@ -81,7 +81,7 @@ def connect_instance(guard, win) -> None:
     guard.show_requested.connect(win.show_and_raise)
 
 
-def build_window(*, state_path: Path, quit_fn=None, orb: bool = True,
+def build_window(*, state_path: Path, quit_fn=None, voice: bool = True,
                  avatar_running: bool | None = None):
     from seven_l1.ade_status import AdeStatusClient
     from seven_l1.app import DesktopWindow
@@ -122,29 +122,26 @@ def build_window(*, state_path: Path, quit_fn=None, orb: bool = True,
         request = getattr(section.widget, "section_requested", None)
         if request is not None:
             request.connect(win.show_section)
-    if orb:
-        win.orb_controller = build_orb(win, state_path, avatar_running)
-        win.attach_mic(win.orb_controller)
+    if voice:
+        win.voice = build_voice(win, state_path, avatar_running)
+        win.attach_mic(win.voice)
     return win
 
 
-def build_orb(win, state_path: Path, avatar_running: bool | None = None):
-    """The orb and its voice (piece 3). Nothing here opens a device or
-    shows a window until OrbController.start()."""
-    from seven_l1.orb.avatar_probe import avatar_running as probe
-    from seven_l1.orb.controller import OrbController
-    from seven_l1.orb.glyph import GlyphRenderer
-    from seven_l1.orb.mood import Mood
-    from seven_l1.orb.window import OrbWindow
+def build_voice(win, state_path: Path, avatar_running: bool | None = None):
+    """The microphone, the wake word and the spoken reply. Nothing here
+    opens a device until VoiceControls.start()."""
+    from seven_l1.voice.avatar_probe import avatar_running as probe
     from seven_l1.voice.controller import VoiceController
+    from seven_l1.voice.controls import VoiceControls
     from seven_l1.voice.mic import MicListener
     from seven_l1.voice.speaker import Speaker
 
     if avatar_running is None:
         avatar_running = probe()
-    return OrbController(
-        window=win, orb=OrbWindow(), renderer=GlyphRenderer(), mood=Mood(),
-        speaker=Speaker(), mic=MicListener(), voice=VoiceController(win.panel),
+    return VoiceControls(
+        window=win, speaker=Speaker(), mic=MicListener(),
+        voice=VoiceController(win.panel),
         state_path=Path(state_path), avatar_running=avatar_running)
 
 
@@ -179,7 +176,7 @@ def run_smoke(app, args) -> int:
     win = build_window(state_path=state, quit_fn=app.quit, avatar_running=False)
     win.start()
     win.show()
-    win.orb_controller.start(open_mic=False)   # never the real microphone
+    win.voice.start(open_mic=False)   # never the real microphone
     deadline = time.monotonic() + max(0, args.smoke_wait) / 1000.0
     while time.monotonic() < deadline:
         app.processEvents()
@@ -189,18 +186,13 @@ def run_smoke(app, args) -> int:
     out = Path(args.smoke_out)
     report["png_written"] = bool(win.grab().save(str(out)))
     report["png"] = str(out.resolve())
-    ctl = win.orb_controller
-    frame = ctl.orb.frame
-    orb_png = out.with_name(out.stem + "-orb" + out.suffix)
-    report["orb"] = {
-        "shown": ctl.orb.isVisible(),
-        "frame": None if frame is None else [frame.width(), frame.height()],
-        "online": ctl.online,
-        "mood": ctl.mood.frame().get("mood"),
+    # No second PNG since the orb was removed: there is no window of its own
+    # left to grab. What voice still has is reported, not drawn.
+    ctl = win.voice
+    report["voice"] = {
         "mic_open": ctl.mic.running(),
+        "speak": ctl.speak_on,
         "mute_button": win.mic_button.text() if win.mic_button.isVisibleTo(win) else None,
-        "png_written": bool(frame is not None and frame.save(str(orb_png))),
-        "png": str(orb_png.resolve()),
     }
     win.quit_app()
     print(json.dumps(report, indent=2))
@@ -240,7 +232,7 @@ def main(argv: list[str] | None = None) -> int:
     connect_instance(guard, win)
     win.start()
     win.show_initial()
-    win.orb_controller.start()
+    win.voice.start()
     code = app.exec()
     guard.release()
     return code

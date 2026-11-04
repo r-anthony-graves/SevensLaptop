@@ -94,7 +94,7 @@ def is_active(payload) -> bool | None:
 
 
 def is_online(payload) -> bool:
-    """The orb's online: Ade OS answered /v1/health at all. BLOCKED and
+    """Online: Ade OS answered /v1/health at all. BLOCKED and
     DEGRADED are reachable; DOWN and UNKNOWN are not."""
     return health_pill(payload)[0] in ("UP", "DEGRADED", "BLOCKED")
 
@@ -116,7 +116,7 @@ def brain_name(payload) -> str:
 
 class AdeStatusClient(QObject):
     """Polls /v1/health (5 s), /v1/settings (30 s) and /v1/activity (2 s,
-    the orb's "is Seven working" -- a cheap GET) off the UI thread.
+    the header's "is Seven working" -- a cheap GET) off the UI thread.
 
     A signal emitted from a worker thread to an object on the GUI thread is
     queued by Qt -- the trader's JsonPoller uses the same model. A poll still

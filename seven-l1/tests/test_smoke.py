@@ -46,12 +46,13 @@ def test_smoke_exits_zero_writes_a_png_and_reports(tmp_path):
     assert "trader" not in report and "trader_pills" not in report
     assert report["png_written"] is True
     assert out.exists() and out.stat().st_size > 0
-    orb = report["orb"]
-    assert orb["shown"] is True and orb["frame"] is not None
-    assert orb["mic_open"] is False            # a smoke run never opens the mic
-    assert orb["mute_button"] == "Unmute"      # the header's button, wired and truthful
-    assert orb["online"] is False and orb["mood"] == "dormant"   # Ade OS is DOWN here
-    assert orb["png_written"] is True
+    # The orb was removed on 2026-11-04. There is no second window to grab
+    # and no mood to report; what voice still has is reported instead.
+    assert "orb" not in report
+    voice = report["voice"]
+    assert voice["mic_open"] is False           # a smoke run never opens the mic
+    assert voice["speak"] is False              # default OFF
+    assert voice["mute_button"] == "Unmute"     # the header's button, wired and truthful
     # The smoke run used SEVEN_L1_STATE_DIR, never the real directory.
     assert (tmp_path / "state" / "desktop.log").exists()
 

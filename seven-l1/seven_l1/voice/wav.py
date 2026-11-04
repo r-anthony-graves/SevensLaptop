@@ -1,5 +1,5 @@
 """WAV in and out -- the avatar's encodeWav()/downsample() (ptt.js), plus the
-loudness envelope that drives the orb's mouth while Seven speaks. Pure."""
+loudness envelope the avatar's mouth was driven by. Pure."""
 
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ def encode_wav(samples, rate: int = 16000) -> bytes:
 
 
 def rms_envelope(wav_bytes: bytes, frame_ms: int = 20) -> list[float]:
-    """Loudness per frame, normalised so the loudest frame is 1.0. The orb's
+    """Loudness per frame, normalised so the loudest frame is 1.0. The avatar's
     mouth reads it at (now - start) while the reply plays."""
     with wave.open(io.BytesIO(wav_bytes)) as w:
         rate, width, channels = w.getframerate(), w.getsampwidth(), w.getnchannels()

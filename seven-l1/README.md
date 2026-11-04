@@ -22,7 +22,7 @@ ever rendered placeholders.
 | **QA** | built |
 | **Lotto** (PythonLotto's odds and simulator, drawn natively) | built |
 | **Seven conversation** (the right-hand panel) | built |
-| **Orb + voice** | built |
+| **Voice** (microphone, wake word, spoken replies) | built |
 
 Design history: `docs/superpowers/specs/2026-09-17-ade-desktop-piece-1-design.md`
 in ade-ai (those filenames keep the old name; they are real files there).
@@ -98,8 +98,19 @@ required, so "Sevenfold" never wakes it.
 **The wake variants are reasoned, not measured.** The Ade rule they replaced
 was measured against the live recogniser (by the avatar, 2026-08-27); nobody
 has yet checked what whisper returns for a spoken "Seven" on this microphone.
-`adeos/avatar` still wakes on "Ade" — the two faces no longer share a wake
-word.
+`adeos/avatar` still wakes on "Ade" — the two no longer share a wake word.
+
+The microphone and the spoken reply are `seven_l1/voice/controls.py`, with
+two items in the tray: **Microphone** and **Speak Seven's replies** (off by
+default). The header's **Mute** button and the tray item are one control.
+
+**The orb was removed on 2026-11-04** — the frameless always-on-top face
+that drew a glyph, carried a mood and had a mute button painted on it. It
+was also what held the microphone, the speaker and the wake wiring, so that
+moved into `VoiceControls` rather than going with it. Its two settings that
+still mean something, `speak` and `mic`, are read from the old `orb` block
+in `window.json` once and rewritten under `voice`; the rest of that block
+described the face and is dropped.
 
 ## Settings (environment)
 
