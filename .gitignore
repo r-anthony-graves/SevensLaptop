@@ -1,0 +1,46 @@
+# This repository is PUBLIC and lives on a drive that holds real secrets:
+# F:\LLMKey.txt, F:\certs\, and F:\Ade Storage\backups\ (Postgres copies of
+# Ade's memory, including conversations). None of that belongs here, so the
+# shapes are refused by name -- a public repository should not depend on
+# someone spotting a key in a diff.
+
+# Credentials and keys
+*.key
+*.pem
+*.pfx
+*.p12
+*.crt
+*.cer
+*LLMKey*
+*secret*
+*secrets*
+*credential*
+*token*
+.env
+.env.*
+!.env.example
+
+# Databases and memory exports
+*.db
+*.sqlite
+*.sqlite3
+pgdata/
+*-pgdata-*/
+desktop-knowledge-*.json
+*.dump
+
+# Models and other large blobs that belong on the drive, not in git
+*.gguf
+*.onnx
+*.bin
+*.zip
+*.7z
+
+# Build and tooling noise
+__pycache__/
+*.py[cod]
+.venv/
+.venv-*/
+node_modules/
+.DS_Store
+Thumbs.db
