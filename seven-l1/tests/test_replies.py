@@ -1,0 +1,119 @@
+"""Reply text, ported from the avatar's readReply(), applyAskResult() and
+its /health formatter."""
+
+from seven_l1.conversation.replies import (
+    ask_reply, error_cause, health_text, read_reply, task_types_from,
+)
+
+
+def test_error_cause_wording():
+    assert error_cause({"error": "ConnectError: refused"}) == \
+        "Ade OS unreachable: ConnectError: refused"
+    assert error_cause({"error": "ReadTimeout: timed out"}) == \
+        "no answer in time: ReadTimeout: timed out"
+    assert error_cause({"error": "HTTP 502: not JSON", "status": 502}) == \
+        "HTTP 502: not JSON"
+    assert error_cause({"error": {"code": "execution_blocked",
+                                  "message": "memory down"},
+                        "status": 503}) == \
+        "HTTP 503: execution_blocked - memory down"
+
+
+def test_a_reachable_server_is_never_called_unreachable():
+    """Review finding: Ade OS returns some errors as plain strings -- the 409
+    'session busy' from /v1/terminal/run, a 200 {ok:false, error} from
+    /v1/terminal. It answered; it is not 'unreachable'."""
+    assert error_cause({"error": "session busy", "status": 409}) == \
+        "HTTP 409: session busy"
+    assert error_cause({"ok": False, "error": "timed out after 30s"}) == \
+        "Ade OS said: timed out after 30s"
+    assert error_cause({"error": "RemoteProtocolError: peer closed"}) == \
+        "Ade OS unreachable: RemoteProtocolError: peer closed"
+    assert error_cause({"error": "ConnectTimeout: timed out"}) == \
+        "no answer in time: ConnectTimeout: timed out"
+
+
+def test_task_types_from_the_400_envelope():
+    result = {"error": {"code": "unknown_task_type", "message": "x",
+                        "detail": {"task_types": ["coding", "qa"]}},
+              "status": 400}
+    assert task_types_from(result) == ["coding", "qa"]
+    assert task_types_from({"error": "refused"}) == []
+
+
+def test_read_reply_order():
+    assert read_reply({"choices": [{"message": {"content": "hi"}}]}) == "hi"
+    assert read_reply({"summary": "s", "output": "o"}) == "o"
+    assert read_reply({"error": "e"}) == "e"
+    assert read_reply({"task_id": "abc"}) == "task abc accepted"
+    assert read_reply("plain") == "plain"
+    assert read_reply(None) == ""
+    assert read_reply({"x": 1}) == '{\n  "x": 1\n}'
+
+
+def test_ask_reply_plain_and_cited():
+    assert ask_reply({"answer": "A"}).text == "A"
+    assert ask_reply({"answer": "A", "roots_cited": ["ade-ai"]}).text == \
+        "A\n\nFrom: ade-ai"
+    assert ask_reply({}).text == "(no output)"
+
+
+def test_ask_reply_escalate_stays_here_and_stages_nothing():
+    r = ask_reply({"answer": "ESCALATE: add a flag",
+                   "escalate": {"prompt": "add a flag", "root": "ade-ai"}})
+    assert r.text == ("add a flag\n\nSeven would treat this as a change in "
+                      "ade-ai. It stays here — nothing was staged.")
+    assert r.cleared is False
+    assert ask_reply({"answer": "hi",
+                      "escalate": {"prompt": "greet Ray"}}).text == "Hello, Ray."
+    cleared = ask_reply({"answer": "",
+                         "escalate": {"prompt": "clear the context"}})
+    assert cleared.cleared is True
+
+
+def test_health_text():
+    up = {"status": "up", "may_execute_tools": True,
+          "subsystems": {"memory": {"up": True, "detail": "pg"}}}
+    assert health_text(up) == "Ade OS: up\n  memory: up - pg"
+    blocked = {"status": "down", "may_execute_tools": False,
+               "blocking_reason": "db", "subsystems": {"memory": {"up": False}}}
+    assert health_text(blocked) == \
+        "Ade OS: down\n  memory: DOWN\n  tools BLOCKED: db"
+    assert health_text({"error": "ConnectError: refused"}) == (
+        "Ade OS did not answer /v1/health - ConnectError: refused. "
+        "That IS the health answer: the API is unreachable.")
+
+
+def test_failed_means_a_truthy_error_not_the_key():
+    """/v1/tasks always carries `error`: null (mission) or "" (fast path)
+    on success. The key's presence is not failure (piece-5 review)."""
+    from seven_l1.conversation.replies import failed
+
+    assert failed({"error": None, "ok": True}) is False
+    assert failed({"error": "", "ok": True}) is False
+    assert failed({"answer": "hi"}) is False
+    assert failed({"error": "ConnectError: refused"}) is True
+    assert failed({"error": {"code": "x", "message": "y"}, "status": 400}) is True
+    assert failed(None) is True and failed("text") is True
+
+
+# -- an ask that did not finish says so (Ray, 2026-09-18: "it stops after getting to this") --
+
+def test_an_unfinished_ask_says_it_did_not_finish_and_what_to_do():
+    """Ade OS marks it ok:false; the desktop showed the promise as if it were
+    the answer ("Let me explore ADE OS's actual architecture ...")."""
+    r = ask_reply({"answer": "Let me explore the architecture first.", "ok": False})
+    assert r.text.startswith("Let me explore the architecture first.")
+    assert "didn't finish" in r.text and "/compare" in r.text
+
+
+def test_a_timed_out_ask_says_it_ran_out_of_time():
+    r = ask_reply({"answer": "Partial answer.", "ok": False, "timed_out": True})
+    assert "ran out of time" in r.text
+
+
+def test_a_finished_or_cancelled_ask_adds_nothing():
+    assert ask_reply({"answer": "Done.", "ok": True}).text == "Done."
+    assert ask_reply({"answer": "Done."}).text == "Done."                 # an older Ade OS
+    assert "didn't finish" not in ask_reply(
+        {"answer": "x", "ok": False, "cancelled": True}).text

@@ -1,0 +1,22 @@
+# Pinned to what D:\tradinglocal\.venv runs: the trader's widgets are
+# imported into this process, so the Qt build must be the one they were
+# written against. If tradinglocal upgrades PySide6, move this pin with it.
+#
+# PySide6-Essentials, NOT PySide6: the meta-package also installs
+# PySide6-Addons, which is where QtWebEngine lives. This app renders no
+# HTML (Ray, 2026-09-17: "fully native, no browser engine"), and leaving
+# Addons out makes that true of the venv, not just of the code.
+PySide6-Essentials==6.11.1
+httpx==0.28.1
+pytest==9.1.1
+# The orb's microphone (piece 3). PortAudio ships inside the wheel; Qt's own
+# audio (QtMultimedia) lives in PySide6-Addons with QtWebEngine, which the
+# no-browser-engine rule above keeps out. RawInputStream needs no numpy.
+sounddevice==0.5.2
+# The Lotto section's engine: exact odds and Monte Carlo draws, no UI of its
+# own. Pinned by commit, because this venv installs with pip and PythonLotto's
+# uv.lock means nothing here. The repo is private, so a fresh machine needs
+# GitHub auth before this line resolves. Installed WITHOUT the [tui] extra:
+# the Textual terminal app is never drawn in a Qt window, and since 073cf80
+# the core carries no dependencies at all.
+pythonlotto @ git+https://github.com/r-anthony-graves/PythonLotto.git@073cf80ffe79ddd874e9ca93e1d054353e3bf2ab
