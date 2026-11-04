@@ -107,6 +107,7 @@ word.
 |---|---|---|
 | `SEVEN_L1_ADE_URL` | `http://127.0.0.1:8300` | which Ade OS the header watches (the avatar's twin is `:8301`) |
 | `SEVEN_L1_STATE_DIR` | `%APPDATA%\seven-l1` | `window.json`, `threads-*.json` and `desktop.log` |
+| `SEVEN_L1_ADE_AI` | searched (see Test) | the ade-ai checkout the two cross-repo tests read. Tests only; the app never reads it |
 
 Renamed from `ADE_DESKTOP_*` on 2026-11-04. The old names are **not** read as
 a fallback, so anything outside this repo that sets them must be updated.
@@ -123,11 +124,25 @@ still points it at a closed port defensively.
 saw as JSON and writes a PNG. It passes with everything DOWN, because DOWN
 is a correctly rendered state.
 
-One test is skipped on this machine: `tests/test_pm_logic.py` compares this
-app's model against `adeos/records/pmi.py` through a hardcoded
-`C:\Users\ray_g\ade-ai` path, and this checkout is under `C:\Users\r_ant`.
-`tests/test_qa.py` reads the web's `qaNav.ts` the same way. Both skip rather
-than fail, which means they are currently proving nothing.
+### The two cross-repo tests
+
+Two tests pin this app against its source of truth in Ade OS: PM's slug
+against `adeos/records/pmi.py`, and QA's catalogue against the web's
+`qaNav.ts`. They find the checkout through `tests/conftest.py`'s
+`ade_ai_file` fixture — `SEVEN_L1_ADE_AI` first, then the usual locations.
+
+They used to hardcode `C:\Users\ray_g\ade-ai`, which is not where this
+checkout is. The PM one skipped; the QA one ran **half** of itself behind a
+bare `if WEB.exists()` and reported a pass, which is worse — a green tick
+over a check that executed on no machine. Fixed 2026-11-04; both now run.
+
+The lookup draws a line that matters:
+
+- **no ade-ai checkout** → `skip`, said out loud. A clone of this repo on
+  its own is a supported case.
+- **a checkout is here but the mirrored file is gone** → **fail**, naming
+  the path. That is the drift case: the file was moved or renamed, and a
+  skip would hide exactly what the test exists to catch.
 
 **If you ever hit a native crash in the tests** (`Windows fatal exception:
 access violation`): check whether a widget a test drops has become a

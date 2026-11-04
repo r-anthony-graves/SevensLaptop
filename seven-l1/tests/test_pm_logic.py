@@ -19,13 +19,11 @@ def test_slug_is_python_slug(name, slug):
     assert model.slug(name) == slug
 
 
-def test_the_slug_matches_ade_os_itself():
+def test_the_slug_matches_ade_os_itself(ade_ai_file):
     import importlib.util
-    import pathlib
     import sys
-    src = pathlib.Path(r"C:\Users\ray_g\ade-ai\adeos\records\pmi.py")
-    if not src.exists():
-        pytest.skip("Ade OS checkout not here")
+
+    src = ade_ai_file("adeos/records/pmi.py")
     spec = importlib.util.spec_from_file_location("_pmi_probe", src)
     mod = importlib.util.module_from_spec(spec)
     sys.modules["_pmi_probe"] = mod

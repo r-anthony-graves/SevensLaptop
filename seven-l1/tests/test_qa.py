@@ -4,7 +4,6 @@ the qa primary's live task types, and only measured numbers."""
 
 import gc
 import json
-import pathlib
 import weakref
 
 import pytest
@@ -16,7 +15,7 @@ from seven_l1.sections.qa.client import QaClient
 from seven_l1.sections.qa.panel import NO_PROJECT, QaPanel
 from seven_l1.workspace.active import ActiveProject
 
-WEB = pathlib.Path(r"C:\Users\ray_g\ade-ai\adeos\web\src\pages\QA\qaNav.ts")
+WEB_RELPATH = "adeos/web/src/pages/QA/qaNav.ts"
 
 # ------------------------------------------------------------------ model
 
@@ -26,12 +25,24 @@ def test_the_catalogue_is_the_web_s_sixteen_in_order():
         "dashboard", "requirements", "test-plans", "test-suites", "test-cases",
         "test-execution", "defects", "traceability", "reports", "test-data", "automation",
         "api-testing", "performance", "security", "analytics", "settings"]
-    if WEB.exists():
-        text = WEB.read_text(encoding="utf-8")
-        for sec in model.SECTIONS:                  # every label and purpose, verbatim
-            assert f"label: '{sec['label']}'" in text, sec["id"]
-            first = sec["purpose"].split("'")[0][:40]
-            assert first in text, sec["id"]
+
+
+def test_the_catalogue_matches_the_web_verbatim(ade_ai_file):
+    """Every label and the start of every purpose, checked against the web's
+    own qaNav.ts in ade-ai.
+
+    This was the second half of the test above, behind a bare
+    `if WEB.exists()` on a hardcoded C:\\Users\\ray_g path that is not this
+    machine. It therefore ran on no machine and reported a PASS -- a test
+    that cannot fail is worse than one that is missing, because the green
+    tick is read as cover. It is its own test now, so when it does not run
+    pytest says "skipped" out loud.
+    """
+    text = ade_ai_file(WEB_RELPATH).read_text(encoding="utf-8")
+    for sec in model.SECTIONS:
+        assert f"label: '{sec['label']}'" in text, sec["id"]
+        first = sec["purpose"].split("'")[0][:40]
+        assert first in text, sec["id"]
 
 
 def test_the_thirteen_files_are_the_qa_package():
