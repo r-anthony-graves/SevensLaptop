@@ -40,3 +40,14 @@ applies those commits to the desktop's `main`. A clash is logged and left for a 
 The script also makes a "Seven" shortcut that opens the same window as the desktop (and repoints any old Seven-L1 shortcut), then copies
 the desktop's window look: the aurora look, the saved palette, theme and avatar settings, and Electron. `-NoShortcut`, `-NoLook` and
 `-NoElectron` skip those parts. Design notes for the window are in `docs/ui-design-notes.md`.
+
+### Checking the setup
+
+`laptop-check.ps1` only reads. It prints PASS, WARN or FAIL for the tools, the repo, Seven's Python, the sync task, the window look,
+the shortcuts, the keys (set or not, never shown), Ollama and Hindsight, with a "fix:" command on each problem:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File laptop-check.ps1
+```
+
+`docs/HANDOFF-laptop-setup-check.md` is the hand-off for a session on the laptop: what was built, the rules, the steps, what to report.
