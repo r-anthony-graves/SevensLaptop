@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Seven Window Design Notes</title>
+</head>
+<body>
+
+
+<style>
+/* layout concept: one reading column, a sticky section index on wide screens, specimens (swatches, layout sketch, type) as the content */
+:root {
+  --bg: #e8ebef; --panel: #f5f6f8; --ink: #1b2430; --soft: #4f5a69; --line: #c7cbd0; --accent: #3f5b7a; --on-accent: #ffffff;
+  --warn-bg: #e2dcce; --warn-ink: #6a5320; --good: #3d6b46; --bad: #a2392f;
+  --sans: "Segoe UI", system-ui, -apple-system, sans-serif; --serif: Georgia, "Iowan Old Style", "Times New Roman", serif;
+  --mono: ui-monospace, Consolas, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #10151c; --panel: #171e27; --ink: #dfe5ec; --soft: #9aa7b6; --line: #2a3441; --accent: #8fb0d4; --on-accent: #10151c;
+  --warn-bg: #2b2616; --warn-ink: #e3c27a; --good: #7fc08e; --bad: #f08a80; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #10151c; --panel: #171e27; --ink: #dfe5ec; --soft: #9aa7b6; --line: #2a3441; --accent: #8fb0d4; --on-accent: #10151c;
+  --warn-bg: #2b2616; --warn-ink: #e3c27a; --good: #7fc08e; --bad: #f08a80; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 400 15px/1.6 var(--sans); padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1040px; margin: 0 auto; display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 36px; }
+nav { position: sticky; top: 24px; align-self: start; display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+nav a { color: var(--soft); text-decoration: none; padding: 5px 10px; border-radius: 8px; }
+nav a:hover, nav a:focus-visible { background: var(--panel); color: var(--ink); outline: none; }
+main { min-width: 0; display: flex; flex-direction: column; gap: 44px; }
+h1 { font: 600 30px/1.15 var(--sans); letter-spacing: .01em; margin: 0 0 8px; text-wrap: balance; }
+h2 { font: 600 20px/1.25 var(--sans); margin: 0 0 12px; text-wrap: balance; scroll-margin-top: 20px; }
+h3 { font: 600 13px/1.3 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--soft); margin: 18px 0 8px; }
+p { margin: 0 0 10px; max-width: 68ch; }
+.lead { font: 400 17px/1.7 var(--serif); color: var(--ink); max-width: 62ch; }
+.sub { color: var(--soft); font-size: 13px; max-width: 70ch; }
+code, .mono { font: 400 12.5px/1.5 var(--mono); }
+code { background: var(--panel); padding: 1px 5px; border-radius: 5px; }
+.card { background: var(--panel); border-radius: 14px; box-shadow: inset 0 0 0 1px var(--line); padding: 16px 18px; }
+.callout { background: var(--warn-bg); color: var(--ink); border-radius: 14px; padding: 16px 18px; box-shadow: inset 4px 0 0 var(--warn-ink); }
+.callout b { color: var(--warn-ink); }
+.table { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--soft); font-weight: 600; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+.looks { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.look b { display: block; font-size: 15px; margin-bottom: 4px; }
+.look .tag { font: 12px var(--mono); color: var(--soft); }
+.pal { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.sw { border-radius: 12px; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); }
+.sw .top { padding: 12px 12px 10px; display: flex; justify-content: space-between; align-items: center; }
+.sw .top b { font-size: 14px; }
+.sw .chip { font: 600 11px var(--mono); padding: 3px 8px; border-radius: 99px; }
+.sw .body { padding: 10px 12px 12px; font: 12px/1.7 var(--mono); }
+.sw .row { display: flex; justify-content: space-between; gap: 8px; }
+.sw .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.2); }
+.blue { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.sketch { display: grid; grid-template-columns: 44px minmax(90px, 0.7fr) minmax(0, 2.4fr) minmax(80px, 0.6fr); gap: 6px; min-height: 250px; font: 11px var(--mono); }
+.sketch > div { border-radius: 10px; padding: 8px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); color: var(--soft); }
+.sketch .stage { display: flex; flex-direction: column; gap: 6px; padding: 6px; background: transparent; box-shadow: inset 0 0 0 1px var(--line); }
+.sketch .stage div { border-radius: 8px; padding: 6px 8px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); }
+.sketch .stage .grow { flex: 1; display: grid; place-items: center; }
+.sketch .on { background: var(--accent); color: var(--on-accent); }
+.rail-dot { width: 24px; height: 24px; border-radius: 12px; background: var(--accent); margin-bottom: 6px; }
+.rail-b { width: 24px; height: 18px; border-radius: 7px; background: var(--line); margin-bottom: 5px; }
+.type { display: grid; gap: 14px; }
+.type .s { border-left: 3px solid var(--line); padding: 2px 0 2px 14px; }
+.type .meta { font: 12px var(--mono); color: var(--soft); }
+.type .reply { font: 17px/1.7 var(--serif); }
+.bubble { display: inline-block; background: var(--accent); color: var(--on-accent); border-radius: 18px 18px 4px 18px; padding: 8px 14px; font-size: 15px; }
+.keys { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.key { font: 600 13px var(--sans); padding: 6px 14px; background: var(--panel); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+.key.cut { clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 9px 100%, 0 calc(100% - 9px)); border-radius: 0; box-shadow: none; background: var(--line); }
+.key.round { border-radius: 10px; }
+.key.on { background: var(--accent); color: var(--on-accent); }
+.key.go { background: var(--good); color: var(--bg); } .key.stop { background: var(--bad); color: var(--bg); }
+.orb { width: 96px; height: 96px; border-radius: 50%; background: radial-gradient(circle at 38% 34%, hsl(251 70% 75%), hsl(251 55% 45%) 55%, hsl(251 50% 22%) 100%); box-shadow: 0 0 0 1px hsl(251 60% 70% / .5), 0 0 34px hsl(251 70% 55% / .55); }
+@media (prefers-reduced-motion: no-preference) { .orb { animation: breathe 4.5s ease-in-out infinite; } }
+@keyframes breathe { 50% { transform: scale(1.045); } }
+.hero { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+ul { margin: 0; padding-left: 20px; } li { margin: 3px 0; max-width: 70ch; }
+.foot { color: var(--soft); font-size: 12.5px; border-top: 1px solid var(--line); padding-top: 12px; }
+@media (max-width: 820px) { .wrap { grid-template-columns: minmax(0, 1fr); } nav { position: static; flex-direction: row; flex-wrap: wrap; } }
+</style>
+
+<div class="wrap">
+<nav aria-label="Sections">
+  <a href="#laptop">Laptop difference</a><a href="#looks">Three looks</a><a href="#layout">Layout</a><a href="#colour">Colour</a>
+  <a href="#type">Type</a><a href="#components">Components</a><a href="#desk">Desk keys</a><a href="#hero">Hero and motion</a>
+  <a href="#responsive">Responsive</a><a href="#gaps">Known gaps</a>
+</nav>
+<main>
+  <header>
+    <h1>Seven Window Design Notes</h1>
+    <p class="lead">One web page, three looks, eight muted palettes. This is the window as the code builds it, written 4 Nov 2026 from <code>seven/window/page/</code> and the desktop's saved settings.</p>
+    <p class="sub">It describes the code, not a screenshot: nobody has checked it by eye for this document, and several recent pages are still unseen in the project notes.</p>
+  </header>
+
+  <section id="laptop">
+    <h2>Why the laptop can look different</h2>
+    <div class="callout"><p><b>The desktop's look is not in the repository.</b> It comes from two Windows variables and three state files, so a laptop with the same code opens in the plain <i>classic</i> look, in Edge.</p></div>
+    <div class="card table" style="margin-top:12px"><table>
+      <tr><th>Setting</th><th>Desktop</th><th>Lives in</th><th>If unset</th></tr>
+      <tr><td><code>SEVEN_UI</code></td><td>aurora</td><td>Windows user variable</td><td>classic</td></tr>
+      <tr><td><code>SEVEN_SHELL</code></td><td>electron</td><td>Windows user variable</td><td>Edge app window</td></tr>
+      <tr><td>palette</td><td>graphite</td><td><code>state/ui_palette.json</code></td><td>none</td></tr>
+      <tr><td>theme</td><td>dark</td><td><code>state/ui_theme.json</code></td><td>follows the system</td></tr>
+      <tr><td>hero avatar</td><td>strip, large, voice-reactive, hue 251, glow line</td><td><code>state/avatar-settings.json</code></td><td>defaults</td></tr>
+    </table></div>
+    <p class="sub" style="margin-top:10px">Only <code>state/model_mode.json</code> is tracked by git. To match the desktop, set <code>SEVEN_UI=aurora</code>, install Electron (<code>npm install</code> in <code>seven/window-shell</code>, or set <code>SEVEN_ELECTRON</code>) with <code>SEVEN_SHELL=electron</code>, and copy the three state files. The old laptop app, Seven-L1, was a different program.</p>
+  </section>
+
+  <section id="looks">
+    <h2>Three looks, one structure</h2>
+    <p>The server writes the look into the <code>&lt;html&gt;</code> tag; everything else is CSS on those attributes.</p>
+    <div class="looks">
+      <div class="card look"><b>classic</b><span class="tag">data-ui="classic" · style.css</span><p class="sub" style="margin-top:6px">Plain panels, system colours, light or dark by the system. The default.</p></div>
+      <div class="card look"><b>glass</b><span class="tag">data-ui="glass" · glass.css</span><p class="sub" style="margin-top:6px">The slick look: warm paper tones, rounded controls, a draggable chat list, resizable table columns. Palettes live here.</p></div>
+      <div class="card look"><b>aurora</b><span class="tag">data-look="aurora" · aurora.css</span><p class="sub" style="margin-top:6px">Glass in blue, plus the hero avatar, the Command Center home and a hero strip on every page. A chosen palette replaces the blue.</p></div>
+    </div>
+    <p class="sub" style="margin-top:10px">The desktop is aurora with the graphite palette: graphite colours inside aurora's structure.</p>
+  </section>
+
+  <section id="layout">
+    <h2>Layout</h2>
+    <div class="sketch" role="img" aria-label="Sketch of the window: rail, chat list, stage with header, hero strip, content and say row, and the inspector">
+      <div><div class="rail-dot"></div><div class="rail-b"></div><div class="rail-b"></div><div class="rail-b"></div><div class="rail-b"></div></div>
+      <div>chats list<br>(drag grip, 180px min, 40% max)</div>
+      <div class="stage">
+        <div>header · title · status · <span class="on" style="padding:1px 6px;border-radius:6px">Chat</span> Forex Notebook Lab REA API Settings</div>
+        <div>hero strip: orb + words (aurora)</div>
+        <div class="grow">page content</div>
+        <div>say row · input · Send · Stop</div>
+      </div>
+      <div>inspector<br>(drawer, 320px)</div>
+    </div>
+    <h3>Pieces</h3>
+    <ul>
+      <li><b>Rail</b>: the "SEVEN" tile widens it to show key names; buttons radius 12, current page filled with the accent and a glow.</li>
+      <li><b>Views</b>: Chat, Forex, Notebook, Lab, REA, API, Settings. Settings has sections Settings, Memory, Plugins, Companion, Prompts.</li>
+      <li><b>Command Center</b> (aurora home): grid areas <code>hero quick / hero health / mission chats / positions positions</code>, gap 16, cards radius 20.</li>
+      <li><b>Kept in the page only</b>: the stage always keeps 648 px (a 320 px inspector and a 320 px chat plus 8 px margin); table columns never under 40 px. A reload restores the default layout.</li>
+    </ul>
+  </section>
+
+  <section id="colour">
+    <h2>Colour</h2>
+    <p>Everything is a CSS custom property with the same meaning in every look: <code>--ink</code> text, <code>--paper</code> page, <code>--panel</code>, <code>--line</code>, <code>--soft</code> secondary text, <code>--accent</code> / <code>--on-accent</code>, <code>--good</code>, <code>--bad</code>, <code>--warn</code>. Gain is green and loss is red in every look.</p>
+    <h3>The eight muted palettes</h3>
+    <p class="sub">Chosen because Ray dislikes pastel and neon. All light; shared bad #a2392f, good #3d6b46, warn #6a5320.</p>
+    <div class="pal" id="pal"></div>
+    <h3>Aurora blue (when no palette is chosen)</h3>
+    <div class="blue">
+      <div class="sw"><div class="top" style="background:#000c1c;color:#c9dee0"><b>aurora dark</b><span class="chip" style="background:#0a8ef0;color:#fff">#0a8ef0</span></div>
+        <div class="body" style="background:#04203e;color:#86a6bc"><div class="row"><span>paper</span><span>#000c1c</span></div><div class="row"><span>panel</span><span>#04203e</span></div><div class="row"><span>ink</span><span style="color:#c9dee0">#c9dee0</span></div><div class="row"><span>line</span><span>#1f4263</span></div><div class="row"><span>good / bad</span><span><span style="color:#66d7a8">#66d7a8</span> <span style="color:#ff8791">#ff8791</span></span></div></div></div>
+      <div class="sw"><div class="top" style="background:#e6f5ff;color:#0e2740"><b>aurora light</b><span class="chip" style="background:#0784e3;color:#fff">#0784e3</span></div>
+        <div class="body" style="background:#eef8ff;color:#4b7898"><div class="row"><span>paper</span><span>#e6f5ff</span></div><div class="row"><span>panel</span><span>#eef8ff</span></div><div class="row"><span>ink</span><span style="color:#0e2740">#0e2740</span></div><div class="row"><span>line</span><span>#c8e5f7</span></div><div class="row"><span>good / bad</span><span><span style="color:#1f9d6b">#1f9d6b</span> <span style="color:#c93a46">#c93a46</span></span></div></div></div>
+    </div>
+    <p class="sub" style="margin-top:10px">Dark page background <code>linear-gradient(160deg, #001020, #001e36 58%, #031a2e)</code>; glass fill <code>rgba(4,32,62,.66)</code> with a <code>rgba(120,190,255,.20)</code> edge.</p>
+    <h3>Classic and glass (warm)</h3>
+    <div class="card table"><table>
+      <tr><th>Look</th><th>paper</th><th>panel</th><th>ink</th><th>accent / other</th></tr>
+      <tr><td>classic light</td><td>#fbfbfd</td><td>#f0f1f5</td><td>#1b1b1f</td><td>you #dfe8ff · warn #ffe8c2</td></tr>
+      <tr><td>classic dark</td><td>#17181c</td><td>#202228</td><td>#e7e8ec</td><td>you #2a3558 · good #7fd6a4</td></tr>
+      <tr><td>glass light</td><td>#f6f3ec</td><td>#fbf9f4</td><td>#2a2620</td><td>accent #2f5d50</td></tr>
+      <tr><td>glass desk dark</td><td>#1c1913</td><td>#221f17</td><td>#ece6d8</td><td>amber #e3b45a · gain #8fc4ae · loss #e08a8f</td></tr>
+    </table></div>
+  </section>
+
+  <section id="type">
+    <h2>Type</h2>
+    <div class="type">
+      <div class="s"><div class="meta">body · "Segoe UI", system-ui · 15px</div>Seven keeps what you said and what you decided, with dates.</div>
+      <div class="s"><div class="meta">Seven's replies · Georgia · 17px / 1.7, no bubble</div><div class="reply">The Forex run on GBP_USD is flat. No order was placed this hour, and the daily loss limit is untouched.</div></div>
+      <div class="s"><div class="meta">your message · accent bubble · radius 18 / 4</div><span class="bubble">Is the autopilot on?</span></div>
+      <div class="s"><div class="meta">code and editors · ui-monospace, Consolas · 12px · pre blocks on soft fill, radius 12</div><span class="mono">rsi_14_30_90 · AUD_USD · H4 · 190 trades</span></div>
+      <div class="s"><div class="meta">hero words · 600 · 30px (24px in a short window) · tracking .08em</div><span style="font:600 30px/1.1 var(--sans);letter-spacing:.08em">SEVEN</span></div>
+    </div>
+    <p class="sub" style="margin-top:10px">Desk pages also declare Orbitron, Rajdhani (400–700) and Share Tech Mono from <code>window/fonts/</code> (open licence). Which element uses which was not checked.</p>
+  </section>
+
+  <section id="components">
+    <h2>Components</h2>
+    <ul>
+      <li><b>View button / chip switch</b>: soft text; on = accent fill, on-accent text, accent glow.</li>
+      <li><b>Cards</b>: glass fill, 1px inset edge, a top highlight, radius 18–20, shadow. The approval card enters with a short animation.</li>
+      <li><b>Say row</b>: one rounded glass bar: input, Send (accent), Stop (soft fill).</li>
+      <li><b>Tables</b>: every header cell has a drag grip; widths are kept per table and column in the page.</li>
+      <li><b>Foldable cards</b> on Forex and Notebook; the folded state is remembered in the browser store.</li>
+    </ul>
+  </section>
+
+  <section id="desk">
+    <h2>Desk keys (Forex, Notebook, REA, API, guide)</h2>
+    <p>These pages share the desk vocabulary: a brand block ("SEVEN" over a small label), an F-key bar of numbered keys, and keys with cut corners. Under glass and aurora the cut corners become <code>border-radius: 10px</code> and the desk tokens follow the global theme.</p>
+    <div class="keys" aria-label="Key styles"><span class="key cut">Cut-corner key</span><span class="key round">Rounded key</span><span class="key round on">Current</span><span class="key round go">Go</span><span class="key round stop">Stop</span></div>
+    <p class="sub">Forex page rules Ray set: reports first, manual tools tucked away; a chart that pans and zooms with the mouse, a crosshair with a price tag, timeframe, indicator and line keys, OANDA's feel without its dark look; sub-tabs instead of one long page.</p>
+  </section>
+
+  <section id="hero">
+    <h2>Hero avatar and motion</h2>
+    <div class="hero card"><div class="orb" role="img" aria-label="Sketch of the orb at hue 251"></div>
+      <ul><li>Orb 170 px in the strip (112 px under 760 px window height); the big hero card is the Command Center's, and the same orb moves into the strip elsewhere.</li>
+      <li>Settings: strip on/off and size, voice-reactive, backing, breathe, speed, colour (desktop: custom, hue 251), line style (glow).</li>
+      <li>The hero reacts to Seven's replies (glow and flash, "Thinking" / "Replying"); the mood part is hard to see.</li>
+      <li><code>prefers-reduced-motion</code> turns the card entrance and orb motion off.</li></ul></div>
+  </section>
+
+  <section id="responsive">
+    <h2>Responsive and access</h2>
+    <ul>
+      <li>Grids drop to one column at 900 px (Forex, prompts, API) and 760 px (Command Center); the hero shrinks under 760 px height. There is no phone layout.</li>
+      <li><code>prefers-color-scheme</code> picks light or dark unless the Light/Dark button or a palette overrides it.</li>
+      <li>The rail has a label and <code>aria-expanded</code>; grips are labelled separators, keyboard-focusable, 24 px per arrow key; Settings sections are a tablist.</li>
+    </ul>
+  </section>
+
+  <section id="gaps">
+    <h2>Known gaps for a designer</h2>
+    <ul>
+      <li>Forex and Notebook were split into sub-views to reduce crowding; the result has not been seen in Ray's own window.</li>
+      <li>Classic and Seven-L1 are older than aurora: design new screens for aurora plus the eight palettes.</li>
+      <li>Palettes are light only. The desktop's saved theme is dark; which wins on screen should be settled by looking.</li>
+      <li>The laptop needs the settings in the first section before it can be compared with the desktop.</li>
+    </ul>
+  </section>
+  <p class="foot">Source: <code>seven/seven-docs/ui-design-notes.md</code> in the private ray-code repo; the same text, without swatches.</p>
+</main>
+</div>
+<script>
+// the eight palettes, from glass.css; the swatches paint with the palette's own colours, not the page's theme
+var P = [
+  ['graphite', '#e8ebef', '#f5f6f8', '#1b2430', '#3f5b7a', 'the desktop\'s'], ['charcoal', '#e6e6e6', '#f4f4f4', '#16181c', '#2b2f36', ''],
+  ['ink', '#e4e6ed', '#f3f4f7', '#1a1d2e', '#3b4468', ''], ['stone', '#eae6e0', '#f6f4f1', '#2a2622', '#8c5a44', ''],
+  ['plum', '#e9e4e8', '#f5f3f5', '#2a1e27', '#5c4256', ''], ['pine', '#e3e9e6', '#f2f5f4', '#17261f', '#2f5f58', ''],
+  ['oxblood', '#ebe4e2', '#f6f3f2', '#2b1b1a', '#7d3f3a', ''], ['olive', '#e9e8df', '#f5f5f1', '#24261a', '#5f6336', '']
+];
+var host = document.getElementById('pal'), html = '';
+P.forEach(function (p) {
+  html += '<div class="sw"><div class="top" style="background:' + p[1] + ';color:' + p[3] + '"><b>' + p[0] + '</b><span class="chip" style="background:' + p[4] + ';color:#fff">' + p[4] + '</span></div>' +
+    '<div class="body" style="background:' + p[2] + ';color:' + p[3] + '">' +
+    '<div class="row"><span><i class="dot" style="background:' + p[1] + '"></i>paper</span><span>' + p[1] + '</span></div>' +
+    '<div class="row"><span><i class="dot" style="background:' + p[2] + '"></i>panel</span><span>' + p[2] + '</span></div>' +
+    '<div class="row"><span><i class="dot" style="background:' + p[3] + '"></i>ink</span><span>' + p[3] + '</span></div>' +
+    '<div class="row"><span><i class="dot" style="background:' + p[4] + '"></i>accent</span><span>' + (p[5] || '&nbsp;') + '</span></div></div></div>';
+});
+host.innerHTML = html;
+</script>
+
+</body>
+</html>
