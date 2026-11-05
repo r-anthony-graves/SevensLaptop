@@ -7,6 +7,9 @@
 #   ... -HindsightPort N -PostgresPort N -HindsightOllama URL   Hindsight's ports (8890, 5440) and the Ollama it reads its small models from
 #   ... -Dir C:\Somewhere             where the repo goes (default D:\Ray-Code if the laptop has a D: drive, else ~\Ray-Code)
 #   ... -NoAutoSync                   do not register the automatic two-way sync (step 8)
+#   ... -NoShortcut                   do not make the 'Seven' shortcut or repoint the old Seven-L1 ones (step 9)
+#   ... -NoLook                       do not copy the desktop's window look (step 10)
+#   ... -NoElectron                   copy the look but do not install Electron (the window then opens in Edge)
 #
 # What it does, in order. Every step can be run again: the script only does what is not done yet.
 #   1. Checks Git, Python 3.12, GitHub CLI (and Ollama) and installs what is missing with winget.
@@ -26,6 +29,14 @@
 #      the `laptop` branch on GitHub; on the desktop, seven\scripts\laptop-import.ps1 applies those commits to D:\Ray-Code main.
 #      A clash stops that file and is logged, never forced. Log and status: ~\.seven-laptop-sync\. Pause: create ~\.seven-laptop-sync\off.
 #
+#   9. Makes the 'Seven' shortcut (Desktop and Start menu) that opens the SAME window as the desktop, and repoints any old Seven-L1
+#      shortcut at it (the original is kept as a .seven-l1-backup file). See seven\scripts\laptop-shortcut.ps1 (-Undo puts them back).
+#
+#  10. Copies the desktop's window LOOK so the laptop's Seven looks the same: SEVEN_UI=aurora and SEVEN_SHELL=electron (user variables),
+#      the palette, Light/Dark and hero-avatar files in seven\state\, and Electron (Node.js with winget, then npm install in seven\window-shell).
+#      Your own choices already on the laptop are kept. See seven\scriptspply-look.ps1; the desktop writes seven\config\desktop-look.json
+#      with export-look.ps1.
+#
 # NOT included: the desktop's Hindsight memories, the OANDA keys, the voiceprint, seven\state and anything else that is not
 # committed (for example the qvm archives in sevenfiles\qvm). Copy those by hand if you want them.
 param(
@@ -37,7 +48,7 @@ param(
     [int]$HindsightPort = 8890,
     [int]$PostgresPort = 5440,
     [switch]$SkipPython, [switch]$SkipOllama, [switch]$SkipHindsight,
-    [switch]$NoInstall, [switch]$NoAutoSync, [switch]$DryRun
+    [switch]$NoInstall, [switch]$NoAutoSync, [switch]$NoShortcut, [switch]$NoLook, [switch]$NoElectron, [switch]$DryRun
 )
 
 $ErrorActionPreference = 'Stop'
@@ -381,6 +392,26 @@ else {
         Say "scheduled task 'Seven laptop sync' registered: at logon and every 15 minutes"
         Say "log and status: $(Join-Path $HOME '.seven-laptop-sync'); pause with an empty file named 'off' there"
     } catch { Warn "could not register the scheduled task ($($_.Exception.Message)). Run the sync by hand when you want it: powershell -File $syncScript" }
+}
+
+# ---- 9. the Seven shortcut
+Step "9. The Seven shortcut (the same window as the desktop)"
+$shortcutScript = Join-Path $Dir 'seven\scripts\laptop-shortcut.ps1'
+if ($NoShortcut -or $SkipPython) { Say "skipped" }
+elseif ($DryRun) { Say "[dry run] make the 'Seven' shortcut and repoint old Seven-L1 shortcuts" }
+elseif (-not (Test-Path -LiteralPath $shortcutScript)) { Warn "this copy of the repo has no seven\scripts\laptop-shortcut.ps1 yet (the desktop has not synced it to GitHub). Run this script again after the desktop's push." }
+else { Native "make the Seven shortcut" { powershell.exe -NoProfile -ExecutionPolicy Bypass -File $shortcutScript -Dir $Dir } -Soft | Out-Null }
+
+# ---- 10. the desktop's look
+Step "10. The desktop's window look"
+$lookScript = Join-Path $Dir 'seven\scriptspply-look.ps1'
+if ($NoLook) { Say "skipped (-NoLook)" }
+elseif ($DryRun) { Say "[dry run] set SEVEN_UI/SEVEN_SHELL, write the palette/theme/avatar files, install Electron" }
+elseif (-not (Test-Path -LiteralPath $lookScript)) { Warn "this copy of the repo has no seven\scriptspply-look.ps1 yet (the desktop has not synced it to GitHub). Run this script again after the desktop's push." }
+elseif (-not (Test-Path -LiteralPath (Join-Path $Dir 'seven\config\desktop-look.json'))) { Warn "this copy of the repo has no seven\config\desktop-look.json yet: on the desktop run seven\scripts\export-look.ps1, commit the file and push." }
+else {
+    $lookArgs = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $lookScript); if ($NoElectron) { $lookArgs += '-NoElectron' }
+    Native "copy the desktop's look" { powershell.exe @lookArgs } -Soft | Out-Null
 }
 
 # ---- done

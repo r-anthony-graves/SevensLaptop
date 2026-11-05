@@ -21,7 +21,8 @@ Its whole look is chosen by settings, and the desktop's choices are NOT in the r
 Only `state/model_mode.json` is tracked. So a laptop that has the right code but none of these settings opens in the **classic**
 look, in Edge. To match the desktop: set `SEVEN_UI=aurora` (and `SEVEN_SHELL=electron` with Electron installed: `node_modules`
 is not in git, so run `npm install` in `seven/window-shell`, or set `SEVEN_ELECTRON` to the program), and copy the three state files.
-The old laptop app, Seven-L1, was a different program and is no longer in SevensLaptop.
+`seven/scripts/apply-look.ps1` (step 10 of `laptop-setup.ps1`) now does all of this from `seven/config/desktop-look.json`, which
+`seven/scripts/export-look.ps1` writes on the desktop. The old laptop app, Seven-L1, was a different program and is no longer in SevensLaptop.
 
 ## 2. Three looks, one structure
 

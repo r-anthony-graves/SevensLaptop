@@ -109,7 +109,7 @@ ul { margin: 0; padding-left: 20px; } li { margin: 3px 0; max-width: 70ch; }
       <tr><td>theme</td><td>dark</td><td><code>state/ui_theme.json</code></td><td>follows the system</td></tr>
       <tr><td>hero avatar</td><td>strip, large, voice-reactive, hue 251, glow line</td><td><code>state/avatar-settings.json</code></td><td>defaults</td></tr>
     </table></div>
-    <p class="sub" style="margin-top:10px">Only <code>state/model_mode.json</code> is tracked by git. To match the desktop, set <code>SEVEN_UI=aurora</code>, install Electron (<code>npm install</code> in <code>seven/window-shell</code>, or set <code>SEVEN_ELECTRON</code>) with <code>SEVEN_SHELL=electron</code>, and copy the three state files. The old laptop app, Seven-L1, was a different program.</p>
+    <p class="sub" style="margin-top:10px">Only <code>state/model_mode.json</code> is tracked by git. To match the desktop, set <code>SEVEN_UI=aurora</code>, install Electron (<code>npm install</code> in <code>seven/window-shell</code>, or set <code>SEVEN_ELECTRON</code>) with <code>SEVEN_SHELL=electron</code>, and copy the three state files. <code>seven/scripts/apply-look.ps1</code> (step 10 of <code>laptop-setup.ps1</code>) now does this from <code>seven/config/desktop-look.json</code>, which <code>export-look.ps1</code> writes on the desktop. The old laptop app, Seven-L1, was a different program.</p>
   </section>
 
   <section id="looks">

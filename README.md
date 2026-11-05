@@ -34,3 +34,9 @@ from the cloned repo. It saves this laptop's edits as commits (never anything th
 snapshot, and pushes to the `laptop` branch of the private `ray-code` repo, never to its `main`. On the desktop a matching task
 applies those commits to the desktop's `main`. A clash is logged and left for a person, never forced. Log and status are in
 `~\.seven-laptop-sync\`; an empty file named `off` there pauses it. `-NoAutoSync` skips the task.
+
+### The Seven window and its look
+
+The script also makes a "Seven" shortcut that opens the same window as the desktop (and repoints any old Seven-L1 shortcut), then copies
+the desktop's window look: the aurora look, the saved palette, theme and avatar settings, and Electron. `-NoShortcut`, `-NoLook` and
+`-NoElectron` skip those parts. Design notes for the window are in `docs/ui-design-notes.md`.
