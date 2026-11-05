@@ -26,3 +26,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File laptop-setup.ps1 -DesktopOll
 
 It can be run again: it only does what is not done yet. The first lines of the script list every option. It installs
 Git, Python 3.12, the GitHub CLI and Ollama with winget when they are missing, and opens a browser window to log in to GitHub.
+
+### Automatic updates both ways
+
+The script also registers a scheduled task, "Seven laptop sync" (at logon and every 15 minutes), that runs `seven\scripts\laptop-sync.ps1`
+from the cloned repo. It saves this laptop's edits as commits (never anything that looks like a secret), merges the desktop's latest
+snapshot, and pushes to the `laptop` branch of the private `ray-code` repo, never to its `main`. On the desktop a matching task
+applies those commits to the desktop's `main`. A clash is logged and left for a person, never forced. Log and status are in
+`~\.seven-laptop-sync\`; an empty file named `off` there pauses it. `-NoAutoSync` skips the task.

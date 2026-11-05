@@ -6,14 +6,14 @@
 #   ... -SkipPython | -SkipOllama | -SkipHindsight   leave one part out
 #   ... -HindsightPort N -PostgresPort N -HindsightOllama URL   Hindsight's ports (8890, 5440) and the Ollama it reads its small models from
 #   ... -Dir C:\Somewhere             where the repo goes (default D:\Ray-Code if the laptop has a D: drive, else ~\Ray-Code)
-#   ... -AllowPush                    leave git push enabled (default: the laptop clone is READ-ONLY, see below)
+#   ... -NoAutoSync                   do not register the automatic two-way sync (step 8)
 #
 # What it does, in order. Every step can be run again: the script only does what is not done yet.
 #   1. Checks Git, Python 3.12, GitHub CLI (and Ollama) and installs what is missing with winget.
 #   2. Logs in to GitHub (a browser window opens) and checks the account can read r-anthony-graves/ray-code.
-#   3. Clones that repo, or brings an existing clone up to date (fast-forward only). The desktop's own sync script
-#      (seven\scripts\sync-to-github.ps1) is what puts the desktop's committed work there; run it on the desktop ("push")
-#      for new work to show up here. The laptop clone has its push turned off so it cannot fork that history.
+#   3. Clones that repo, or brings an existing clone up to date (the same merge the automatic sync does, see 8). The
+#      desktop's own sync script (seven\scripts\sync-to-github.ps1) puts the desktop's committed work on GitHub's main every
+#      night at 00:00 PT (or when you say "push"). A plain `git push` from this clone goes to the `laptop` branch, never main.
 #   4. Makes seven\.venv and installs Seven's packages from seven\requirements.lock.
 #   5. Ollama: builds seven-qwythos (Seven's default model, pulled from Hugging Face, about 6.5 GB) and the two CPU-only
 #      models Hindsight uses (qwen3-1.7b-cpu, nomic-embed-cpu).
@@ -21,6 +21,10 @@
 #      and creates the bank "ray". The memory starts EMPTY: the desktop's memories are not copied.
 #   7. With -DesktopOllama: points Seven at the desktop's Ollama (user environment variables SEVEN_OLLAMA_URL, SEVEN_BASE_URL,
 #      SEVEN_MODEL=seven-v33). seven-v33 only exists as a file on the desktop, so this is the way to use it from the laptop.
+#   8. Automatic updates both ways: registers the scheduled task "Seven laptop sync" (at logon and every 15 minutes) that runs
+#      seven\scripts\laptop-sync.ps1. It saves this laptop's edits as commits, merges the desktop's latest snapshot, and pushes to
+#      the `laptop` branch on GitHub; on the desktop, seven\scripts\laptop-import.ps1 applies those commits to D:\Ray-Code main.
+#      A clash stops that file and is logged, never forced. Log and status: ~\.seven-laptop-sync\. Pause: create ~\.seven-laptop-sync\off.
 #
 # NOT included: the desktop's Hindsight memories, the OANDA keys, the voiceprint, seven\state and anything else that is not
 # committed (for example the qvm archives in sevenfiles\qvm). Copy those by hand if you want them.
@@ -33,7 +37,7 @@ param(
     [int]$HindsightPort = 8890,
     [int]$PostgresPort = 5440,
     [switch]$SkipPython, [switch]$SkipOllama, [switch]$SkipHindsight,
-    [switch]$NoInstall, [switch]$AllowPush, [switch]$DryRun
+    [switch]$NoInstall, [switch]$NoAutoSync, [switch]$DryRun
 )
 
 $ErrorActionPreference = 'Stop'
@@ -119,12 +123,18 @@ Step "3. The repo in $Dir"
 if (Test-Path -LiteralPath (Join-Path $Dir '.git')) {
     $origin = (& git -C $Dir remote get-url origin 2>$null)
     if ("$origin".Trim() -ne $RepoUrl) { Fail "${Dir} is a git repository whose origin is '$origin', not ${RepoUrl}: choose another -Dir" }
-    $dirty = @(& git -C $Dir status --porcelain --untracked-files=no).Count
-    if ($dirty -gt 0) { Fail "$Dir has $dirty changed file(s) of its own: undo them (git -C $Dir restore .) or choose another -Dir, then run this again" }
     Native "fetch" { git -C $Dir fetch origin } | Out-Null
     Native "switch to main" { git -C $Dir checkout main } -Quiet | Out-Null
-    $code = Native "bring main up to date" { git -C $Dir merge --ff-only origin/main } -Soft
-    if ($code -ne 0) { Fail "main cannot be fast-forwarded. GitHub's main was rewritten or this clone has commits of its own. If the clone holds nothing you want: git -C $Dir reset --hard origin/main" }
+    $syncScript = Join-Path $Dir 'seven\scripts\laptop-sync.ps1'
+    if ((Test-Path -LiteralPath $syncScript) -and -not $NoAutoSync) {
+        # the two-way sync saves this clone's own edits, merges the desktop's snapshot and pushes to the laptop branch
+        Native "run the two-way sync once" { powershell.exe -NoProfile -ExecutionPolicy Bypass -File $syncScript -Dir $Dir } | Out-Null
+    } else {
+        $dirty = @(& git -C $Dir status --porcelain --untracked-files=no).Count
+        if ($dirty -gt 0) { Fail "$Dir has $dirty changed file(s) of its own: undo them (git -C $Dir restore .) or choose another -Dir, then run this again" }
+        $code = Native "bring main up to date" { git -C $Dir merge --ff-only origin/main } -Soft
+        if ($code -ne 0) { Fail "main cannot be fast-forwarded. This clone has commits of its own. If it holds nothing you want: git -C $Dir reset --hard origin/main" }
+    }
 } else {
     if ((Test-Path -LiteralPath $Dir) -and @(Get-ChildItem -LiteralPath $Dir -Force).Count -gt 0) { Fail "$Dir exists and is not empty: choose another -Dir" }
     Say "Cloning (a few hundred MB)"
@@ -132,10 +142,9 @@ if (Test-Path -LiteralPath (Join-Path $Dir '.git')) {
 }
 if (-not $DryRun) {
     Native "long paths on" { git -C $Dir config core.longpaths true } -Quiet | Out-Null
-    if (-not $AllowPush) {
-        Native "turn push off" { git -C $Dir remote set-url --push origin 'push-disabled-on-the-laptop' } -Quiet | Out-Null
-        Say "push is OFF in this clone (the desktop's sync script owns GitHub main); -AllowPush leaves it on"
-    }
+    # a plain `git push` from this clone goes to the laptop branch: GitHub's main is the desktop's snapshot chain
+    Native "send pushes to the laptop branch" { git -C $Dir config remote.origin.push 'refs/heads/main:refs/heads/laptop' } -Quiet | Out-Null
+    Say "git push in this clone goes to the 'laptop' branch, never to GitHub's main"
     $head = (& git -C $Dir rev-parse --short HEAD).Trim()
     Say "main is at $head"
 }
@@ -354,12 +363,32 @@ else {
     }
 }
 
+# ---- 8. automatic updates both ways
+Step "8. Automatic updates both ways"
+$syncScript = Join-Path $Dir 'seven\scripts\laptop-sync.ps1'
+if ($NoAutoSync) { Say "skipped (-NoAutoSync)" }
+elseif (-not $DryRun -and -not (Test-Path -LiteralPath $syncScript)) {
+    Warn "this copy of the repo has no seven\scripts\laptop-sync.ps1 yet (the desktop has not synced it to GitHub). Run the desktop's push, then run this script again."
+}
+elseif ($DryRun) { Say "[dry run] register the scheduled task 'Seven laptop sync' (at logon and every 15 minutes; the first run is a minute after)" }
+else {
+    try {
+        $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$syncScript`" -Dir `"$Dir`""
+        $every = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 15) -RepetitionDuration (New-TimeSpan -Days 3650)
+        $logon = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
+        $conf = New-ScheduledTaskSettingsSet -StartWhenAvailable -DontStopIfGoingOnBatteries -AllowStartIfOnBatteries -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 20)
+        Register-ScheduledTask -TaskName 'Seven laptop sync' -Action $action -Trigger @($logon, $every) -Settings $conf -Force -Description 'Two-way sync of the Seven repo with the desktop (laptop-setup.ps1)' | Out-Null
+        Say "scheduled task 'Seven laptop sync' registered: at logon and every 15 minutes"
+        Say "log and status: $(Join-Path $HOME '.seven-laptop-sync'); pause with an empty file named 'off' there"
+    } catch { Warn "could not register the scheduled task ($($_.Exception.Message)). Run the sync by hand when you want it: powershell -File $syncScript" }
+}
+
 # ---- done
 Step "Done"
 Say "Repo:        $Dir"
 if (-not $SkipPython) { Say "Seven:       $VenvPy" }
 if (-not $SkipHindsight) { Say "Hindsight:   http://127.0.0.1:$HindsightPort/health   (folder $HindsightDir)" }
-Say "Update:      run this script again, or: git -C $Dir pull --ff-only   (only work the desktop has synced to GitHub shows up)"
+Say "Updates:     automatic, both ways (step 8). Desktop work reaches here after its nightly sync to GitHub; this laptop's edits go to the desktop's main through the 'laptop' branch."
 Say "Open Seven:  $(Join-Path $SevenDir '.venv\Scripts\seven-window.exe')"
 if ($Notes.Count -gt 0) {
     Write-Host ""; Write-Host "Things to know:" -ForegroundColor Yellow
