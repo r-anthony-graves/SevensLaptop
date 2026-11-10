@@ -35,6 +35,22 @@ snapshot, and pushes to the `laptop` branch of the private `ray-code` repo, neve
 applies those commits to the desktop's `main`. A clash is logged and left for a person, never forced. Log and status are in
 `~\.seven-laptop-sync\`; an empty file named `off` there pauses it. `-NoAutoSync` skips the task.
 
+### Router tools (network)
+
+`laptop-network.ps1` sets this laptop up for Seven's read-only router tools. It needs nothing from the desktop: it installs the router
+library from the public Python package index into Seven's venv, writes `seven\configouter.json` only when it is missing and you give
+`-RouterPin` (the router's certificate fingerprint, 64 hex characters), can turn on Tailscale's accept-routes with `-AcceptRoutes`, and tests
+that the router's admin port answers (a plain connect, nothing sent, no sign-in). It never handles the router login: you type that yourself
+with `seven\scripts\store-router-login.ps1`. No address or fingerprint is built in.
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File laptop-network.ps1 -DryRun                      # say what it would do
+powershell -NoProfile -ExecutionPolicy Bypass -File laptop-network.ps1 -RouterPin <64 hex> -AcceptRoutes
+```
+
+It can be run again: it only does what is not done yet, and never changes an existing `router.json`. If it says the checkout has no router tools,
+the laptop's clone has not merged the desktop's latest snapshot yet: run `seven\scripts\laptop-unjam.ps1`, then run this again.
+
 ### The Seven window and its look
 
 The script also makes a "Seven" shortcut that opens the same window as the desktop (and repoints any old Seven-L1 shortcut), then copies
